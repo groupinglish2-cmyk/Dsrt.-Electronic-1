@@ -486,7 +486,7 @@ function showLastResult() {
 
 // Envía una respuesta. Devuelve "sent", "retry" (sin conexión o error de red) o "rejected".
 
-  if (CONFIG.APPS_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycbyuKHD_6SWWeKnNyXNQeHVuNrB4F1cZ-ksaL96WJWz6qhLpGXp4X8N6o3oVcdk35dFjoA/exec")) return "retry";
+  
   const payload = {
     id: item.id,
     queuedAt: item.queuedAt,
