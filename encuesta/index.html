@@ -143,7 +143,7 @@ textarea{min-height:80px}
 <script>
 /* ===================== CONFIGURACIÓN ===================== */
 const CONFIG = {
-  // Pegue aquí la URL de la "Aplicación web" de Apps Script (termina en /exec)
+  
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyuKHD_6SWWeKnNyXNQeHVuNrB4F1cZ-ksaL96WJWz6qhLpGXp4X8N6o3oVcdk35dFjoA/exec",
   QUEUE_KEY: "dsrt_survey_queue_v1",
   LANG_KEY: "dsrt_survey_lang",
@@ -608,7 +608,7 @@ $("step-survey").addEventListener("submit", (e) => {
     status: "pending",
     enumerator,
     language: lang,
-    userLocation: { ...location },
+    userLocation: { ...userLocation },
     answers: collectAnswers(form)
   };
   queue.push(item);
@@ -687,3 +687,4 @@ flush();
 </script>
 </body>
 </html>
+
