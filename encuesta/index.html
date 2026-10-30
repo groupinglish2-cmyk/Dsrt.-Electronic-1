@@ -346,7 +346,7 @@ function makeId() {
 /* ===================== ESTADO ===================== */
 let lang = store.get(CONFIG.LANG_KEY, "es") === "en" ? "en" : "es";
 let enumerator = store.get(CONFIG.LAST_ENUM_KEY, "");
-let userlocation = { status: "no_respondida", latitude: "", longitude: "" };
+let userLocation = { status: "no_respondida", latitude: "", longitude: "" };
 let queue = store.get(CONFIG.QUEUE_KEY, []);
 let storageOk = true;
 let lastItemId = null;
@@ -445,7 +445,7 @@ function startNewSurvey() {
   $("consentCheck").checked = false;
   $("consentErr").textContent = "";
   $("locMsg").textContent = "";
-  userlocation = { status: "no_respondida", latitude: "", longitude: "" };
+  userLocation = { status: "no_respondida", latitude: "", longitude: "" };
   openEnumerator();
 }
 
@@ -595,7 +595,7 @@ $("locYes").addEventListener("click", () => {
 });
 
 $("locNo").addEventListener("click", () => {
-  userlocation = { status: "no_permitida", latitude: "", longitude: "" };
+  userLocation = { status: "no_permitida", latitude: "", longitude: "" };
   showStep("survey");
 });
 
@@ -608,7 +608,7 @@ $("step-survey").addEventListener("submit", (e) => {
     status: "pending",
     enumerator,
     language: lang,
-    userlocation: { ...location },
+    userLocation: { ...location },
     answers: collectAnswers(form)
   };
   queue.push(item);
