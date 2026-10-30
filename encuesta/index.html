@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encuesta DSRT Electronic</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--text:#1d2433;--muted:#5b6478;--primary:#1f5eff;--ok:#127a3d;--warn:#8a5300;--err:#b42318;--border:#d7dce6}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+header{background:#0f1b33;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:10}
+header h1{font-size:1.05rem;margin:0;flex:1 1 auto}
+.badge{background:#22304f;border-radius:999px;padding:4px 10px;font-size:.85rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#2ecc71}
+.dot.off{background:#f39c12}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid transparent;padding:10px 16px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn{background:var(--primary);color:#fff}
+.btn-sec{background:#e9edf5;color:var(--text)}
+.btn-ghost{background:transparent;color:#fff;border-color:#ffffff88}
+main{max-width:760px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.hidden{display:none!important}
+fieldset{border:0;padding:0;margin:0 0 20px}
+legend{font-weight:600;margin-bottom:8px;padding:0}
+.opts label{display:flex;gap:8px;align-items:center}
+input[type=text],select,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font:inherit;background:#fff;color:var(--text)}
+textarea{min-height:80px}
+.scale{display:flex;gap:8px}
+.scale label{flex:1;text-align:center;border:1px solid var(--border);border-radius:8px;padding:8px 0;cursor:pointer;background:#fff}
+.scale input{margin-right:4px}
+.muted{color:var(--muted);font-size:.92rem}
+.consent-text{max-height:280px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:#fafbfd;font-size:.95rem}
+.status{padding:10px 12px;border-radius:8px;margin:8px 0;font-size:.95rem}
+.st-sent{background:#e7f6ec;color:var(--ok)}
+.st-pending{background:#fff4e0;color:var(--warn)}
+.st-error{background:#fde8e6;color:var(--err)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.error{color:var(--err);font-size:.9rem;min-height:1.2em}
+.queue{padding-left:18px;margin:8px 0 0}
+.queue li{margin:4px 0;font-size:.92rem}
+.modal{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal .card{width:min(420px,100%);margin:0}
+#chatBtn{position:fixed;right:16px;bottom:16px;border-radius:999px;padding:14px 18px;box-shadow:0 4px 14px #0003;z-index:20}
+#chatPanel{position:fixed;right:16px;bottom:72px;width:min(340px,calc(100vw - 32px));height:440px;max-height:70vh;background:#fff;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;box-shadow:0 8px 24px #0004;z-index:20;overflow:hidden}
+#chatHead{background:#0f1b33;color:#fff;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+#chatMsgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.msg{padding:8px 12px;border-radius:12px;max-width:85%;white-space:pre-wrap;font-size:.95rem}
+.msg.bot{background:#eef2fb;align-self:flex-start}
+.msg.me{background:var(--primary);color:#fff;align-self:flex-end}
+#chatQuick{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+#chatQuick button{background:#e9edf5;padding:6px 10px;font-size:.82rem;border-radius:999px}
+#chatForm{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
+#chatForm input{flex:1}
+@media (max-width:480px){.scale label{padding:10px 0}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 data-i18n="title"></h1>
+  <span class="badge hidden" id="enumBadge"></span>
+  <span class="badge"><span class="dot" id="netDot"></span><span id="netText"></span></span>
+  <button class="btn-ghost" id="langBtn" type="button"></button>
+</header>
+
+<main>
+  <!-- 1. Nombre del encuestador (ventana emergente) -->
+  <div class="modal" id="enumModal">
+    <form class="card" id="enumForm">
+      <h2 data-i18n="enum_title"></h2>
+      <p class="muted" data-i18n="enum_hint"></p>
+      <label for="enumName" data-i18n="enum_label"></label>
+      <input type="text" id="enumName" maxlength="80" autocomplete="off" required>
+      <p class="error" id="enumErr"></p>
+      <button class="btn" type="submit" data-i18n="continue"></button>
+    </form>
+  </div>
+
+  <!-- 2. Consentimiento informado y confidencialidad -->
+  <section class="card hidden" id="step-consent">
+    <h2 data-i18n="consent_title"></h2>
+    <div class="consent-text" id="consentText"></div>
+    <label class="row" style="margin-top:12px">
+      <input type="checkbox" id="consentCheck"> <span data-i18n="consent_check"></span>
+    </label>
+    <p class="error" id="consentErr"></p>
+    <button class="btn" id="consentBtn" type="button" data-i18n="continue"></button>
+  </section>
+
+  <!-- 3. Ubicación (solo si el encuestado lo permite) -->
+  <section class="card hidden" id="step-loc">
+    <h2 data-i18n="loc_title"></h2>
+    <p data-i18n="loc_text"></p>
+    <div class="row">
+      <button class="btn" id="locYes" type="button" data-i18n="loc_yes"></button>
+      <button class="btn-sec" id="locNo" type="button" data-i18n="loc_no"></button>
+    </div>
+    <p class="muted" id="locMsg"></p>
+  </section>
+
+  <!-- 4. Cuestionario -->
+  <form class="card hidden" id="step-survey">
+    <h2 data-i18n="survey_title"></h2>
+    <p class="muted" data-i18n="survey_hint"></p>
+    <div id="questions"></div>
+    <button class="btn" type="submit" data-i18n="submit"></button>
+  </form>
+
+  <!-- 5. Confirmación -->
+  <section class="card hidden" id="step-done">
+    <h2 data-i18n="thanks_title"></h2>
+    <div id="resultMsg" class="status"></div>
+    <button class="btn" id="newBtn" type="button" data-i18n="new_survey"></button>
+  </section>
+
+  <!-- Respuestas guardadas en el dispositivo -->
+  <section class="card" id="queueCard">
+    <div class="row">
+      <strong data-i18n="queue_title"></strong>
+      <span class="muted" id="queueCount"></span>
+      <button class="btn-sec" id="syncBtn" type="button" data-i18n="sync_now"></button>
+    </div>
+    <ul class="queue" id="queueList"></ul>
+  </section>
+</main>
+
+<!-- Asistente interactivo -->
+<button class="btn" id="chatBtn" type="button"></button>
+<section id="chatPanel" class="hidden" aria-live="polite">
+  <div id="chatHead">
+    <strong data-i18n="chat_title"></strong>
+    <button class="btn-ghost" id="chatClose" type="button" aria-label="Cerrar">✕</button>
+  </div>
+  <div id="chatMsgs"></div>
+  <div id="chatQuick"></div>
+  <form id="chatForm">
+    <input type="text" id="chatInput" maxlength="300" autocomplete="off">
+    <button class="btn" type="submit" data-i18n="chat_send"></button>
+  </form>
+</section>
+
+<script>
+/* ===================== CONFIGURACIÓN ===================== */
+const CONFIG = {
+  // Pegue aquí la URL de la "Aplicación web" de Apps Script (termina en /exec)
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyuKHD_6SWWeKnNyXNQeHVuNrB4F1cZ-ksaL96WJWz6qhLpGXp4X8N6o3oVcdk35dFjoA/exec",
+  QUEUE_KEY: "dsrt_survey_queue_v1",
+  LANG_KEY: "dsrt_survey_lang",
+  LAST_ENUM_KEY: "dsrt_survey_enumerator",
+  SEND_TIMEOUT_MS: 15000,
+  FLUSH_INTERVAL_MS: 30000
+};
+
+/* ===================== TEXTOS (ES / EN) ===================== */
+const T = {
+  es: {
+    title: "Encuesta de satisfacción · DSRT Electronic",
+    lang_toggle: "English",
+    net_on: "En línea", net_off: "Sin conexión",
+    enum_badge: "Encuestador",
+    enum_title: "Datos del encuestador",
+    enum_hint: "Ingrese su nombre. Quedará visible en pantalla y se guardará con cada respuesta.",
+    enum_label: "Nombre del encuestador",
+    enum_err: "Por favor, ingrese su nombre.",
+    continue: "Continuar",
+    consent_title: "Consentimiento informado y confidencialidad",
+    consent_paras: [
+      "Finalidad: esta encuesta recoge opiniones sobre la experiencia con DSRT Electronic para un trabajo de investigación académica.",
+      "Uso académico: la información se utilizará únicamente con fines académicos. No será vendida ni compartida con terceros.",
+      "Participación voluntaria: usted puede responder o no, y dejar de hacerlo en cualquier momento sin consecuencia alguna.",
+      "Confidencialidad: toda la información proporcionada es confidencial y se trata de conformidad con la Ley Orgánica de Protección de Datos Personales (LOPDP, Registro Oficial, Quinto Suplemento N.º 459, del 26 de mayo de 2021) del Ecuador."
+    ],
+    consent_check: "He leído el texto anterior, comprendo su contenido y acepto participar.",
+    consent_err: "Debe aceptar el consentimiento para continuar.",
+    loc_title: "Ubicación (opcional)",
+    loc_text: "¿Permite registrar su ubicación (latitud y longitud) en esta encuesta? Si no lo permite, la encuesta continuará sin esta información.",
+    loc_yes: "Sí, permito",
+    loc_no: "No permito",
+    loc_asking: "Solicitando ubicación…",
+    loc_ok: "Ubicación registrada.",
+    loc_fail: "No fue posible obtener la ubicación. La encuesta continuará sin ella.",
+    survey_title: "Cuestionario",
+    survey_hint: "Las preguntas marcadas con * son obligatorias. Las de escala van de 1 (mínimo) a 5 (máximo).",
+    submit: "Enviar respuesta",
+    thanks_title: "¡Gracias por participar!",
+    new_survey: "Nueva encuesta",
+    queue_title: "Respuestas pendientes de sincronizar",
+    queue_count: n => `${n} pendiente(s)`,
+    queue_empty: "No hay respuestas pendientes. Todo está enviado.",
+    sync_now: "Sincronizar ahora",
+    st_sending: "Enviando…",
+    st_sent: "✔ Respuesta enviada a Google Sheets.",
+    st_pending: "⏳ Guardada en el dispositivo. Pendiente de sincronización: se enviará automáticamente cuando se restablezca la conexión.",
+    st_rejected: "⚠ El servidor rechazó la respuesta. Avise al responsable de la encuesta.",
+    st_save_fail: "⚠ No se pudo guardar en el dispositivo. Conéctese a internet antes de cerrar la página.",
+    st_retry: "Pendiente (se reintentará)",
+    st_rejected_short: "Rechazada por el servidor",
+    chat_title: "Asistente",
+    chat_open: "💬 Ayuda",
+    chat_send: "Enviar",
+    chat_placeholder: "Escriba su pregunta…",
+    chat_welcome: "¡Hola! Soy el asistente de la encuesta. Elija una opción o escriba su pregunta.",
+    chat_fallback: "No encontré una respuesta exacta. Pruebe con una de las opciones de abajo."
+  },
+  en: {
+    title: "Satisfaction survey · DSRT Electronic",
+    lang_toggle: "Español",
+    net_on: "Online", net_off: "Offline",
+    enum_badge: "Surveyor",
+    enum_title: "Surveyor details",
+    enum_hint: "Enter your name. It will stay visible on screen and be saved with every response.",
+    enum_label: "Surveyor name",
+    enum_err: "Please enter your name.",
+    continue: "Continue",
+    consent_title: "Informed consent and confidentiality",
+    consent_paras: [
+      "Purpose: this survey collects opinions about the experience with DSRT Electronic for an academic research project.",
+      "Academic use: the information will be used only for academic purposes. It will not be sold or shared with third parties.",
+      "Voluntary participation: you may answer or not, and stop at any time without any consequence.",
+      "Confidentiality: all information provided is confidential and is processed in accordance with Ecuador's Organic Law on Personal Data Protection (LOPDP, Registro Oficial, Quinto Suplemento No. 459, 26 May 2021)."
+    ],
+    consent_check: "I have read the text above, I understand it and I agree to participate.",
+    consent_err: "You must accept the consent to continue.",
+    loc_title: "Location (optional)",
+    loc_text: "Do you allow us to record your location (latitude and longitude) in this survey? If not, the survey will continue without this information.",
+    loc_yes: "Yes, I allow it",
+    loc_no: "No, I do not allow it",
+    loc_asking: "Requesting location…",
+    loc_ok: "Location recorded.",
+    loc_fail: "The location could not be obtained. The survey will continue without it.",
+    survey_title: "Questionnaire",
+    survey_hint: "Questions marked with * are required. Scale questions go from 1 (lowest) to 5 (highest).",
+    submit: "Submit response",
+    thanks_title: "Thank you for participating!",
+    new_survey: "New survey",
+    queue_title: "Responses waiting to sync",
+    queue_count: n => `${n} pending`,
+    queue_empty: "No pending responses. Everything is sent.",
+    sync_now: "Sync now",
+    st_sending: "Sending…",
+    st_sent: "✔ Response sent to Google Sheets.",
+    st_pending: "⏳ Saved on this device. Pending sync: it will be sent automatically when the internet connection is restored.",
+    st_rejected: "⚠ The server rejected the response. Please notify the survey manager.",
+    st_save_fail: "⚠ Could not save on this device. Connect to the internet before closing the page.",
+    st_retry: "Pending (will retry)",
+    st_rejected_short: "Rejected by the server",
+    chat_title: "Assistant",
+    chat_open: "💬 Help",
+    chat_send: "Send",
+    chat_placeholder: "Type your question…",
+    chat_welcome: "Hi! I'm the survey assistant. Choose an option or type your question.",
+    chat_fallback: "I couldn't find an exact answer. Try one of the options below."
+  }
+};
+
+/* ===================== PREGUNTAS ===================== */
+// options: [valor, texto ES, texto EN]
+const QUESTIONS = [
+  { id: "q1", type: "select", required: true,
+    es: "¿Cuál es su rango de edad?", en: "What is your age range?",
+    options: [["18-25", "18–25", "18–25"], ["26-35", "26–35", "26–35"], ["36-45", "36–45", "36–45"], ["46-60", "46–60", "46–60"], ["60+", "Más de 60", "Over 60"]] },
+  { id: "q2", type: "select", required: true,
+    es: "¿Cómo conoció DSRT Electronic?", en: "How did you learn about DSRT Electronic?",
+    options: [["redes", "Redes sociales", "Social media"], ["recomendacion", "Recomendación de un conocido", "Recommendation"], ["google", "Búsqueda en Google", "Google search"], ["local", "Pasé frente al local", "Walked past the store"], ["otro", "Otro", "Other"]] },
+  { id: "q3", type: "select", required: true,
+    es: "¿Qué servicio utilizó?", en: "Which service did you use?",
+    options: [["celular", "Compra de celular", "Phone purchase"], ["accesorios", "Accesorios", "Accessories"], ["service", "Reparación / service", "Repair / service"], ["canje", "Plan canje", "Trade-in plan"], ["mayorista", "Compra mayorista", "Wholesale purchase"]] },
+  { id: "q4", type: "select", required: true,
+    es: "¿Dónde fue atendido o hizo su pedido?", en: "Where were you served or where did you place your order?",
+    options: [["centro", "Sucursal Centro", "Downtown branch"], ["shopping", "Shopping Norte", "Shopping Norte branch"], ["otra", "Otra sucursal", "Another branch"], ["linea", "En línea / WhatsApp", "Online / WhatsApp"]] },
+  { id: "q5", type: "scale", required: true,
+    es: "¿Cómo califica la calidad de los productos?", en: "How do you rate product quality?" },
+  { id: "q6", type: "scale", required: true,
+    es: "¿Cómo califica los precios y las formas de pago?", en: "How do you rate prices and payment options?" },
+  { id: "q7", type: "scale", required: true,
+    es: "¿Cómo califica el tiempo de entrega o retiro?", en: "How do you rate delivery or pickup time?" },
+  { id: "q8", type: "scale", required: true,
+    es: "¿Cómo califica la atención del personal?", en: "How do you rate the staff's service?" },
+  { id: "q9", type: "scale", required: false,
+    es: "¿Cómo califica el servicio técnico (si lo utilizó)?", en: "How do you rate the technical service (if you used it)?" },
+  { id: "q10", type: "scale", required: true,
+    es: "¿Qué tan probable es que recomiende DSRT Electronic? (1 = nada probable, 5 = muy probable)",
+    en: "How likely are you to recommend DSRT Electronic? (1 = not likely, 5 = very likely)" },
+  { id: "q11", type: "select", required: true,
+    es: "¿Qué medio de pago utilizó?", en: "Which payment method did you use?",
+    options: [["efectivo", "Efectivo", "Cash"], ["debito", "Débito", "Debit card"], ["credito", "Crédito", "Credit card"], ["transferencia", "Transferencia", "Bank transfer"], ["qr", "QR", "QR code"], ["canje", "Plan canje", "Trade-in"]] },
+  { id: "q12", type: "text", required: false,
+    es: "¿Qué mejoraría de DSRT Electronic?", en: "What would you improve about DSRT Electronic?" }
+];
+
+/* ===================== ASISTENTE (chatbot) ===================== */
+const CHAT_TOPICS = [
+  { keys: ["cómo funciona", "como funciona", "funciona", "usar", "how does", "how it works", "how to use"],
+    es: { label: "¿Cómo funciona?", answer: "1) Ingrese el nombre del encuestador.\n2) Acepte el consentimiento informado.\n3) Indique si permite registrar su ubicación (opcional).\n4) Responda el cuestionario y envíelo." },
+    en: { label: "How does it work?", answer: "1) Enter the surveyor name.\n2) Accept the informed consent.\n3) Choose whether to share your location (optional).\n4) Answer the questionnaire and submit it." } },
+  { keys: ["sin conexión", "sin conexion", "sin internet", "offline", "internet", "conexión", "conexion", "connection"],
+    es: { label: "¿Funciona sin internet?", answer: "Sí. Si no hay conexión, la respuesta se guarda en el dispositivo y se envía sola cuando vuelva internet. Aparece como 'pendiente' hasta que se envíe. Para abrir la página sin internet, debe haberla abierto antes con conexión." },
+    en: { label: "Does it work without internet?", answer: "Yes. If there is no connection, the response is saved on the device and sent automatically when the internet returns. It shows as 'pending' until it is sent. To open the page offline, you must have opened it once while online." } },
+  { keys: ["datos", "privacidad", "confidencial", "lopdp", "privacy", "data", "personal"],
+    es: { label: "¿Qué pasa con mis datos?", answer: "La información es confidencial, se usa solo con fines académicos y se trata conforme a la LOPDP (Ecuador, Registro Oficial Quinto Suplemento N.º 459, 26-may-2021). Su participación es voluntaria." },
+    en: { label: "What happens to my data?", answer: "The information is confidential, used only for academic purposes and processed under Ecuador's LOPDP (Registro Oficial Quinto Suplemento No. 459, 26 May 2021). Your participation is voluntary." } },
+  { keys: ["ubicación", "ubicacion", "location", "gps", "latitud", "latitude"],
+    es: { label: "¿Por qué piden mi ubicación?", answer: "Es opcional. Solo se registra si usted lo permite; si no, la encuesta continúa sin ese dato." },
+    en: { label: "Why do you ask for my location?", answer: "It is optional. It is only recorded if you allow it; otherwise the survey continues without it." } },
+  { keys: ["pendiente", "enviada", "enviado", "sincron", "sent", "pending", "sync"],
+    es: { label: "¿Cómo sé si mi respuesta se envió?", answer: "En pantalla verá '✔ Enviada a Google Sheets' o '⏳ Pendiente de sincronización'. La lista de pendientes muestra lo que aún no llegó; use 'Sincronizar ahora' cuando tenga internet." },
+    en: { label: "How do I know if my response was sent?", answer: "The screen shows '✔ Sent to Google Sheets' or '⏳ Pending sync'. The pending list shows what has not arrived yet; use 'Sync now' when you have internet." } },
+  { keys: ["tiempo", "cuánto", "cuanto", "minutos", "how long", "time", "duración", "duracion"],
+    es: { label: "¿Cuánto tarda?", answer: "Alrededor de 3 a 5 minutos." },
+    en: { label: "How long does it take?", answer: "About 3 to 5 minutes." } },
+  { keys: ["ayuda", "contacto", "whatsapp", "help", "contact", "human"],
+    es: { label: "Contacto", answer: "Para ayuda, escriba por WhatsApp al +593 99 877 7456 (DSRT Electronic)." },
+    en: { label: "Contact", answer: "For help, message DSRT Electronic on WhatsApp at +593 99 877 7456." } }
+];
+
+/* ===================== UTILIDADES ===================== */
+const $ = (id) => document.getElementById(id);
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "text") node.textContent = v;
+    else if (v !== false && v !== null && v !== undefined) node.setAttribute(k, v === true ? "" : v);
+  }
+  [].concat(children).forEach((c) => node.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+  return node;
+}
+
+const store = {
+  get(key, fallback) {
+    try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+    catch (e) { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch (e) { return false; }
+  }
+};
+
+function makeId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
+/* ===================== ESTADO ===================== */
+let lang = store.get(CONFIG.LANG_KEY, "es") === "en" ? "en" : "es";
+let enumerator = store.get(CONFIG.LAST_ENUM_KEY, "");
+let location = { status: "no_respondida", latitude: "", longitude: "" };
+let queue = store.get(CONFIG.QUEUE_KEY, []);
+let storageOk = true;
+let lastItemId = null;
+let flushing = false;
+
+function persist() {
+  storageOk = store.set(CONFIG.QUEUE_KEY, queue);
+  return storageOk;
+}
+
+/* ===================== IDIOMA ===================== */
+function applyLang() {
+  const t = T[lang];
+  document.documentElement.lang = lang;
+  document.title = t.title;
+  document.querySelectorAll("[data-i18n]").forEach((n) => { n.textContent = t[n.dataset.i18n]; });
+  document.querySelectorAll("[data-es]").forEach((n) => { n.textContent = n.dataset[lang]; });
+  $("langBtn").textContent = t.lang_toggle;
+  $("chatBtn").textContent = t.chat_open;
+  $("chatInput").placeholder = t.chat_placeholder;
+  renderConsent();
+  renderChatQuick();
+  renderBadge();
+  renderNet();
+  renderQueue();
+  showLastResult();
+}
+
+function renderConsent() {
+  const box = $("consentText");
+  box.innerHTML = "";
+  T[lang].consent_paras.forEach((p) => box.appendChild(el("p", { text: p })));
+}
+
+function renderBadge() {
+  const badge = $("enumBadge");
+  badge.textContent = `${T[lang].enum_badge}: ${enumerator}`;
+  badge.classList.toggle("hidden", !enumerator);
+}
+
+function renderNet() {
+  const on = navigator.onLine;
+  $("netDot").classList.toggle("off", !on);
+  $("netText").textContent = on ? T[lang].net_on : T[lang].net_off;
+}
+
+/* ===================== CUESTIONARIO ===================== */
+function buildQuestions() {
+  const wrap = $("questions");
+  QUESTIONS.forEach((q, i) => {
+    const mark = q.required ? " *" : "";
+    const fieldset = el("fieldset");
+    fieldset.appendChild(el("legend", { "data-es": `${i + 1}. ${q.es}${mark}`, "data-en": `${i + 1}. ${q.en}${mark}` }));
+
+    if (q.type === "text") {
+      fieldset.appendChild(el("textarea", { name: q.id, maxlength: "500", rows: "3" }));
+    } else if (q.type === "scale") {
+      const row = el("div", { class: "scale" });
+      for (let n = 1; n <= 5; n++) {
+        row.appendChild(el("label", {}, [
+          el("input", { type: "radio", name: q.id, value: String(n), required: q.required && n === 1 }),
+          String(n)
+        ]));
+      }
+      fieldset.appendChild(row);
+    } else {
+      const select = el("select", { name: q.id, required: q.required });
+      select.appendChild(el("option", { value: "", "data-es": "— Seleccione —", "data-en": "— Select —" }));
+      q.options.forEach(([value, es, en]) => select.appendChild(el("option", { value, "data-es": es, "data-en": en })));
+      fieldset.appendChild(select);
+    }
+    wrap.appendChild(fieldset);
+  });
+}
+
+function collectAnswers(form) {
+  const answers = {};
+  QUESTIONS.forEach((q) => { answers[q.id] = (form.elements[q.id] ? form.elements[q.id].value : "").trim(); });
+  return answers;
+}
+
+function showStep(name) {
+  ["consent", "loc", "survey", "done"].forEach((s) => $("step-" + s).classList.toggle("hidden", s !== name));
+  window.scrollTo(0, 0);
+}
+
+function openEnumerator() {
+  $("enumName").value = enumerator;
+  $("enumErr").textContent = "";
+  $("enumModal").classList.remove("hidden");
+  ["consent", "loc", "survey", "done"].forEach((s) => $("step-" + s).classList.add("hidden"));
+}
+
+function startNewSurvey() {
+  $("step-survey").reset();
+  $("consentCheck").checked = false;
+  $("consentErr").textContent = "";
+  $("locMsg").textContent = "";
+  location = { status: "no_respondida", latitude: "", longitude: "" };
+  openEnumerator();
+}
+
+/* ===================== ENVÍO HÍBRIDO ===================== */
+function statusLabel(item) {
+  const t = T[lang];
+  if (item.status === "sending") return t.st_sending;
+  if (item.status === "rejected") return t.st_rejected_short;
+  return t.st_retry;
+}
+
+function renderQueue() {
+  const t = T[lang];
+  const list = $("queueList");
+  list.innerHTML = "";
+  $("queueCount").textContent = queue.length ? t.queue_count(queue.length) : "";
+  if (!queue.length) list.appendChild(el("li", { class: "muted", text: t.queue_empty }));
+  queue.forEach((item) => {
+    const time = new Date(item.queuedAt).toLocaleString(lang === "es" ? "es-EC" : "en-US");
+    list.appendChild(el("li", { text: `${time} · ${item.enumerator} · ${statusLabel(item)}` }));
+  });
+  $("syncBtn").disabled = !queue.length || flushing;
+}
+
+function showLastResult() {
+  if (!lastItemId || $("step-done").classList.contains("hidden")) return;
+  const t = T[lang];
+  const box = $("resultMsg");
+  const item = queue.find((i) => i.id === lastItemId);
+  let text, cls;
+  if (!item) { text = t.st_sent; cls = "st-sent"; }
+  else if (item.status === "rejected") { text = t.st_rejected; cls = "st-error"; }
+  else { text = t.st_pending; cls = "st-pending"; }
+  if (item && !storageOk) { text += " " + t.st_save_fail; cls = "st-error"; }
+  box.className = "status " + cls;
+  box.textContent = text;
+}
+
+// Envía una respuesta. Devuelve "sent", "retry" (sin conexión o error de red) o "rejected".
+async function sendItem(item) {
+  if (CONFIG.APPS_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycbyuKHD_6SWWeKnNyXNQeHVuNrB4F1cZ-ksaL96WJWz6qhLpGXp4X8N6o3oVcdk35dFjoA/exec")) return "retry";
+  const payload = {
+    id: item.id,
+    queuedAt: item.queuedAt,
+    enumerator: item.enumerator,
+    language: item.language,
+    location: item.location,
+    answers: item.answers
+  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CONFIG.SEND_TIMEOUT_MS);
+  try {
+    // text/plain evita la solicitud previa (preflight) de CORS que Apps Script no admite
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    const data = await res.json();
+    if (data.ok) return "sent";
+    item.error = data.error || "";
+    return "rejected";
+  } catch (err) {
+    return "retry";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Envía en orden todas las respuestas pendientes. Nunca borra una respuesta sin confirmación del servidor.
+async function flush() {
+  if (flushing) return;
+  flushing = true;
+  renderQueue();
+  try {
+    for (const item of [...queue]) {
+      if (!navigator.onLine) break;
+      if (item.status === "rejected") continue;
+      item.status = "sending";
+      renderQueue();
+      const result = await sendItem(item);
+      if (result === "sent") {
+        queue = queue.filter((q) => q.id !== item.id);
+      } else {
+        item.status = result === "rejected" ? "rejected" : "pending";
+        if (result === "retry") break;
+      }
+      persist();
+    }
+  } finally {
+    flushing = false;
+    persist();
+    renderQueue();
+    showLastResult();
+  }
+}
+
+/* ===================== EVENTOS ===================== */
+$("langBtn").addEventListener("click", () => {
+  lang = lang === "es" ? "en" : "es";
+  store.set(CONFIG.LANG_KEY, lang);
+  applyLang();
+});
+
+$("enumForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = $("enumName").value.trim();
+  if (!name) { $("enumErr").textContent = T[lang].enum_err; return; }
+  enumerator = name;
+  store.set(CONFIG.LAST_ENUM_KEY, name);
+  renderBadge();
+  $("enumModal").classList.add("hidden");
+  showStep("consent");
+});
+
+$("consentBtn").addEventListener("click", () => {
+  if (!$("consentCheck").checked) { $("consentErr").textContent = T[lang].consent_err; return; }
+  $("consentErr").textContent = "";
+  showStep("loc");
+});
+
+function setLocationAndContinue(result, message, delay) {
+  location = result;
+  $("locMsg").textContent = message;
+  setTimeout(() => showStep("survey"), delay);
+}
+
+$("locYes").addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    setLocationAndContinue({ status: "no_disponible", latitude: "", longitude: "" }, T[lang].loc_fail, 1200);
+    return;
+  }
+  $("locYes").disabled = $("locNo").disabled = true;
+  $("locMsg").textContent = T[lang].loc_asking;
+  navigator.geolocation.getCurrentPosition(
+    (p) => {
+      $("locYes").disabled = $("locNo").disabled = false;
+      setLocationAndContinue({ status: "registrada", latitude: p.coords.latitude, longitude: p.coords.longitude }, T[lang].loc_ok, 600);
+    },
+    () => {
+      $("locYes").disabled = $("locNo").disabled = false;
+      setLocationAndContinue({ status: "no_disponible", latitude: "", longitude: "" }, T[lang].loc_fail, 1200);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+});
+
+$("locNo").addEventListener("click", () => {
+  location = { status: "no_permitida", latitude: "", longitude: "" };
+  showStep("survey");
+});
+
+$("step-survey").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const item = {
+    id: makeId(),
+    queuedAt: new Date().toISOString(),
+    status: "pending",
+    enumerator,
+    language: lang,
+    location: { ...location },
+    answers: collectAnswers(form)
+  };
+  queue.push(item);
+  lastItemId = item.id;
+  persist();
+  showStep("done");
+  $("resultMsg").className = "status st-pending";
+  $("resultMsg").textContent = T[lang].st_sending;
+  flush();
+});
+
+$("newBtn").addEventListener("click", startNewSurvey);
+$("syncBtn").addEventListener("click", flush);
+
+window.addEventListener("online", () => { renderNet(); flush(); });
+window.addEventListener("offline", () => { renderNet(); renderQueue(); });
+setInterval(() => { if (queue.length) flush(); }, CONFIG.FLUSH_INTERVAL_MS);
+
+/* ===================== ASISTENTE ===================== */
+function addMsg(text, who) {
+  const box = $("chatMsgs");
+  box.appendChild(el("div", { class: "msg " + who, text }));
+  box.scrollTop = box.scrollHeight;
+}
+
+function answerTopic(topic) {
+  addMsg(topic ? topic[lang].answer : T[lang].chat_fallback, "bot");
+}
+
+function renderChatQuick() {
+  const box = $("chatQuick");
+  box.innerHTML = "";
+  CHAT_TOPICS.forEach((topic) => {
+    box.appendChild(el("button", {
+      type: "button",
+      text: topic[lang].label,
+      onclick: null
+    }));
+    box.lastChild.addEventListener("click", () => {
+      addMsg(topic[lang].label, "me");
+      answerTopic(topic);
+    });
+  });
+}
+
+function findTopic(text) {
+  const s = text.toLowerCase();
+  return CHAT_TOPICS.find((topic) => topic.keys.some((k) => s.includes(k)));
+}
+
+function toggleChat(open) {
+  const panel = $("chatPanel");
+  const show = open === undefined ? panel.classList.contains("hidden") : open;
+  panel.classList.toggle("hidden", !show);
+  if (show && !$("chatMsgs").children.length) addMsg(T[lang].chat_welcome, "bot");
+}
+
+$("chatBtn").addEventListener("click", () => toggleChat());
+$("chatClose").addEventListener("click", () => toggleChat(false));
+$("chatForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = $("chatInput");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  addMsg(text, "me");
+  answerTopic(findTopic(text));
+});
+
+/* ===================== INICIO ===================== */
+buildQuestions();
+applyLang();
+openEnumerator();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+flush();
+</script>
+</body>
+</html>
