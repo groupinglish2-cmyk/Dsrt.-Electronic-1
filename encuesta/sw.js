@@ -1,6 +1,6 @@
 // Service Worker: permite abrir la encuesta sin internet después de la primera carga.
 // Al actualizar index.html, suba el número de versión de CACHE para que los equipos descarguen la nueva copia.
-const CACHE = "dsrt-encuesta-v2";
+const CACHE = "dsrt-encuesta-v3";
 const ASSETS = ["./", "./index.html"];
 
 self.addEventListener("install", (event) => {
