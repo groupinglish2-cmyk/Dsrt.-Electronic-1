@@ -569,7 +569,7 @@ $("consentBtn").addEventListener("click", () => {
 });
 
 function setLocationAndContinue(result, message, delay) {
-  location = result;
+  userLocation = result;
   $("locMsg").textContent = message;
   setTimeout(() => showStep("survey"), delay);
 }
